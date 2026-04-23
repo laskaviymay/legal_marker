@@ -16,12 +16,17 @@ class BotConfig:
 
     @classmethod
     def from_env(cls, env: dict[str, str] | None = None, default_root: Path | None = None) -> "BotConfig":
-        values = env if env is not None else os.environ
+        root = default_root or Path.cwd()
+        file_values = _load_env_file(root / ".env")
+        values = dict(file_values)
+        if env is not None:
+            values.update(env)
+        else:
+            values.update(os.environ)
         token = (values.get("TELEGRAM_BOT_TOKEN") or "").strip()
         if not token:
             raise ValueError("TELEGRAM_BOT_TOKEN is required")
 
-        root = default_root or Path.cwd()
         db_dir_value = (values.get("LEGAL_MARKER_DB_DIR") or "").strip()
         db_dir = Path(db_dir_value) if db_dir_value else root / "bot_runtime" / "db"
         db_url = (values.get("LEGAL_MARKER_DB_URL") or "").strip() or None
@@ -53,3 +58,16 @@ def _parse_poll_timeout(raw_value: str) -> int:
         return max(1, int(raw_value))
     except ValueError:
         return 20
+
+
+def _load_env_file(path: Path) -> dict[str, str]:
+    if not path.exists():
+        return {}
+    values: dict[str, str] = {}
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        values[key.strip()] = value.strip().strip('"').strip("'")
+    return values
