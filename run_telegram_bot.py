@@ -45,12 +45,23 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     if args.once:
-        for update in api.get_updates(timeout=1):
-            app.process_update(update)
+        process_updates_once(api, app, timeout=1)
         return 0
 
     app.run_polling()
     return 0
+
+
+def process_updates_once(api: TelegramApiClient, app: TelegramMarkerBot, timeout: int = 1) -> None:
+    updates = api.get_updates(timeout=timeout)
+    if not updates:
+        return
+    offset = 0
+    for update in updates:
+        app.process_update(update)
+        offset = max(offset, int(update.get("update_id", 0)) + 1)
+    if offset:
+        api.get_updates(offset=offset, timeout=0)
 
 
 if __name__ == "__main__":
