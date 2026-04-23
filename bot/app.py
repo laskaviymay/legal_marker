@@ -9,6 +9,7 @@ from bot.formatter import (
     build_confirmation_keyboard,
     decode_callback_data,
     format_confirmation_text,
+    format_result_message,
     split_message,
 )
 from bot.runtime import BotRuntime
@@ -152,7 +153,7 @@ class TelegramMarkerBot:
 
     def _send_text(self, chat_id: int, text: str) -> None:
         for chunk in split_message(text):
-            self.api.send_message(chat_id=chat_id, text=chunk)
+            self.api.send_message(chat_id=chat_id, text=format_result_message(chunk), parse_mode="HTML")
 
     def _send_confirmation(self, chat_id: int, session: BotSession) -> None:
         page = self.sessions.page(session.session_id, session.page)
