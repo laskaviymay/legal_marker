@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import html
+import re
+
 from bot.session_store import BotSession
 from core.gui_service import PaginatedValidationRows
 
@@ -28,6 +31,17 @@ def split_message(text: str, limit: int = 4000) -> list[str]:
     if current:
         chunks.append(current)
     return chunks or [text[:limit]]
+
+
+def format_result_message(text: str) -> str:
+    parts: list[str] = []
+    cursor = 0
+    for match in re.finditer(r"(?<!_)_([^_\n]+?)_(?!_)", text):
+        parts.append(html.escape(text[cursor:match.start()]))
+        parts.append(f"<i>{html.escape(match.group(1))}</i>")
+        cursor = match.end()
+    parts.append(html.escape(text[cursor:]))
+    return "".join(parts)
 
 
 def encode_callback_data(action: str, session_id: str, value: str) -> str:
